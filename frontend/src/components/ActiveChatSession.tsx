@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
 import type { Exchange, Finding } from "@/lib/types";
 import AskedQuestion from "./AskedQuestion";
 import Spinner from "./Spinner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+async function fetchTitle(exchanges: Exchange[]): Promise<string> {
+  const resp = await fetch(`${API_URL}/findings/chat/title`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ exchanges }),
+  });
+  if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
+  const data = await resp.json();
+  return data.title;
+}
 
 export default function ActiveChatSession({
   findings,
@@ -18,6 +29,8 @@ export default function ActiveChatSession({
   const [history, setHistory] = useState<Exchange[]>([]);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [derivedTitle, setDerivedTitle] = useState<string | null>(null);
+  const [titleLoading, setTitleLoading] = useState(false);
 
   const { completion, input, handleInputChange, handleSubmit, setInput, setCompletion, isLoading, error } =
     useCompletion({
@@ -31,6 +44,18 @@ export default function ActiveChatSession({
       },
     });
 
+  // Names the session as soon as the first reply lands, not just when
+  // "Save Conversation" is clicked — so the title is already sitting there
+  // by the time anyone decides whether to save.
+  useEffect(() => {
+    if (history.length !== 1 || derivedTitle) return;
+    setTitleLoading(true);
+    fetchTitle(history)
+      .then(setDerivedTitle)
+      .catch(() => setDerivedTitle(history[0].question.slice(0, 60) || "Saved conversation"))
+      .finally(() => setTitleLoading(false));
+  }, [history, derivedTitle]);
+
   function onSubmit(e: React.FormEvent) {
     setPendingQuestion(input);
     handleSubmit(e);
@@ -42,21 +67,20 @@ export default function ActiveChatSession({
     setPendingQuestion(null);
     setCompletion("");
     setInput("");
+    setDerivedTitle(null);
+    setTitleLoading(false);
   }
 
   async function onSaveClick() {
+    if (derivedTitle) {
+      onSave(derivedTitle, history);
+      return;
+    }
     setSaving(true);
     try {
-      const resp = await fetch(`${API_URL}/findings/chat/title`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exchanges: history }),
-      });
-      if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
-      const data = await resp.json();
-      onSave(data.title, history);
+      onSave(await fetchTitle(history), history);
     } catch {
-      onSave(history[0]?.question.slice(0, 60) ?? "Saved conversation", history);
+      onSave(history[0]?.question.slice(0, 60) || "Saved conversation", history);
     } finally {
       setSaving(false);
     }
@@ -65,14 +89,22 @@ export default function ActiveChatSession({
   const busy = isLoading || saving;
 
   return (
-    <div>
-      <h2 className="mb-1 text-sm font-semibold text-ink" id="chat-title">
-        Ask about these findings
-      </h2>
-      <p className="mb-3 text-xs text-ink-muted" id="chat-description">
-        Grounded in the {findings.length} finding{findings.length === 1 ? "" : "s"} below, reason
-        it through before deciding what to act on.
-      </p>
+    <div className="rounded-lg border border-line bg-panel p-4" id="chat-panel">
+      {history.length === 0 ? (
+        <>
+          <h2 className="mb-1 text-sm font-semibold text-ink" id="chat-title">
+            Ask about these findings
+          </h2>
+          <p className="mb-3 text-xs text-ink-muted" id="chat-description">
+            Grounded in the {findings.length} finding{findings.length === 1 ? "" : "s"} below,
+            reason it through before deciding what to act on.
+          </p>
+        </>
+      ) : (
+        <h2 className="mb-3 text-sm font-semibold text-ink" id="chat-title">
+          {derivedTitle ?? (titleLoading ? "Naming this conversation…" : "Conversation")}
+        </h2>
+      )}
 
       {history.map((exchange, i) => (
         <div key={i} className="mb-3 space-y-1">

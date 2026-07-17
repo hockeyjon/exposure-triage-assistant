@@ -23,7 +23,7 @@ export interface Dependency {
   name: string;
   version: string;
   ecosystem: string;
-  source: "backend" | "frontend" | "demo";
+  source: "backend" | "frontend" | "demo" | "imported";
 }
 
 export interface GraphPublicState {

@@ -2,7 +2,7 @@ import json
 import re
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from . import config, db
 from .graph import build_graph
-from .inventory import seed_inventory
+from .inventory import parse_manifest_text, seed_inventory
 from .llm import get_llm
 from .models import Finding
 
@@ -50,6 +50,38 @@ def rescan_inventory():
     """Re-scan requirements.txt / package.json without restarting the server
     (useful right after adding or upgrading a dependency)."""
     return {"dependencies": seed_inventory()}
+
+
+@app.post("/inventory/import")
+async def import_inventory(file: UploadFile = File(...), mode: str = Form(...)):
+    """Adds to, or wholesale replaces, the current inventory with packages
+    parsed from an uploaded requirements.txt or package.json — tagged
+    source="imported" so the UI never presents them as this project's own
+    scan. Doesn't survive a rescan or restart, which rebuild from the real
+    manifests fresh (see inventory.seed_inventory)."""
+    if mode not in ("add", "replace"):
+        raise HTTPException(400, "mode must be 'add' or 'replace'")
+
+    raw = await file.read()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(400, "Couldn't read that file as text.")
+
+    packages = parse_manifest_text(file.filename or "", text)
+    if not packages:
+        raise HTTPException(
+            400,
+            "No versioned packages found. Expected a requirements.txt (name==version per "
+            "line) or a package.json with a dependencies/devDependencies object.",
+        )
+
+    if mode == "replace":
+        db.replace_dependencies(packages)
+    else:
+        db.merge_dependencies(packages)
+
+    return {"dependencies": db.get_all_dependencies(), "imported": len(packages)}
 
 
 def _sse(event: str, data: dict) -> str:

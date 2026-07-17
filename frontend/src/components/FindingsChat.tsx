@@ -34,28 +34,26 @@ export default function FindingsChat({
     setActiveKey((k) => k + 1);
   }
 
-  return (
-    <div className="mb-6 rounded-lg border border-line bg-panel p-4" id="chat-panel">
-      {!critiqueDone && (
-        <>
-          <h2 className="mb-1 text-sm font-semibold text-ink" id="chat-title">
-            Preparing exposure rationale…
-          </h2>
-          <div className="flex items-center gap-2 py-1 text-xs text-ink-muted">
-            <Spinner />
-            <span>The LLM is still drafting and critiquing rationale for these findings.</span>
-          </div>
-        </>
-      )}
+  if (!critiqueDone) {
+    return (
+      <div className="mb-6 rounded-lg border border-line bg-panel p-4" id="chat-panel">
+        <h2 className="mb-1 text-sm font-semibold text-ink" id="chat-title">
+          Preparing exposure rationale…
+        </h2>
+        <div className="flex items-center gap-2 py-1 text-xs text-ink-muted">
+          <Spinner />
+          <span>The LLM is still drafting and critiquing rationale for these findings.</span>
+        </div>
+      </div>
+    );
+  }
 
-      {critiqueDone && (
-        <>
-          {savedSessions.map((s) => (
-            <SavedChatSession key={s.id} title={s.title} exchanges={s.exchanges} />
-          ))}
-          <ActiveChatSession key={activeKey} findings={findings} onSave={handleSave} />
-        </>
-      )}
+  return (
+    <div className="mb-6 space-y-4">
+      {savedSessions.map((s) => (
+        <SavedChatSession key={s.id} id={`chat-panel-saved-${s.id}`} title={s.title} exchanges={s.exchanges} />
+      ))}
+      <ActiveChatSession key={activeKey} findings={findings} onSave={handleSave} />
     </div>
   );
 }

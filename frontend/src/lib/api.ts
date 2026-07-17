@@ -14,6 +14,19 @@ export async function fetchInventory(): Promise<Dependency[]> {
   return data.dependencies;
 }
 
+export async function importInventory(file: File, mode: "add" | "replace"): Promise<Dependency[]> {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("mode", mode);
+  const resp = await fetch(`${API_URL}/inventory/import`, { method: "POST", body });
+  if (!resp.ok) {
+    const detail = await resp.json().catch(() => null);
+    throw new Error(detail?.detail || `Request failed: ${resp.status} ${resp.statusText}`);
+  }
+  const data = await resp.json();
+  return data.dependencies;
+}
+
 /**
  * Consumes the backend's Server-Sent Events stream from GET /analyze — no
  * request body, since there's no user input. It analyzes whatever is

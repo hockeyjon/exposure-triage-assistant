@@ -6,6 +6,7 @@ import { scrollToId } from "@/lib/scroll";
 import AgentTrace from "@/components/AgentTrace";
 import RankingTable from "@/components/RankingTable";
 import InventoryPanel from "@/components/InventoryPanel";
+import ImportDependenciesButton from "@/components/ImportDependenciesButton";
 import Header from "@/components/Header";
 import type { Dependency, GraphPublicState, NodeName } from "@/lib/types";
 
@@ -84,13 +85,18 @@ export default function Home() {
             error={inventoryError}
             hidden={running || completedNodes.length > 0}
           />
-          <button
-            onClick={runAnalysis}
-            disabled={running}
-            className="mt-4 rounded bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {running ? "Analyzing…" : "Prioritize Exposures"}
-          </button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              onClick={runAnalysis}
+              disabled={running}
+              className="rounded bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {running ? "Analyzing…" : "Prioritize Exposures"}
+            </button>
+            {!(running || completedNodes.length > 0) && (
+              <ImportDependenciesButton onImported={setDependencies} />
+            )}
+          </div>
         </div>
 
         {(running || completedNodes.length > 0 || connectionError) && (

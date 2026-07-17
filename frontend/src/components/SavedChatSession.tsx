@@ -4,15 +4,23 @@ import { useState } from "react";
 import type { Exchange } from "@/lib/types";
 import AskedQuestion from "./AskedQuestion";
 
-export default function SavedChatSession({ title, exchanges }: { title: string; exchanges: Exchange[] }) {
+export default function SavedChatSession({
+  id,
+  title,
+  exchanges,
+}: {
+  id: string;
+  title: string;
+  exchanges: Exchange[];
+}) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="mb-3 overflow-hidden rounded border border-line">
+    <div className="overflow-hidden rounded-lg border border-line bg-panel" id={id}>
       <button
         onClick={() => setExpanded((e) => !e)}
         aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-2 bg-[var(--brand-light)] px-3 py-2 text-left text-sm font-medium text-black"
+        className="flex w-full items-center justify-between gap-2 bg-[var(--brand-light)] px-4 py-3 text-left text-sm font-medium text-black"
       >
         <span className="truncate">{title}</span>
         <svg
@@ -31,7 +39,7 @@ export default function SavedChatSession({ title, exchanges }: { title: string; 
       </button>
 
       {expanded && (
-        <div className="space-y-3 border-t border-line px-3 py-3">
+        <div className="space-y-3 border-t border-line p-4">
           {exchanges.map((exchange, i) => (
             <div key={i} className="space-y-1">
               <AskedQuestion value={exchange.question} />

@@ -53,6 +53,27 @@ def replace_dependencies(deps: list[dict]) -> None:
         conn.close()
 
 
+def merge_dependencies(deps: list[dict]) -> None:
+    """Adds deps into the existing inventory, overwriting any row that
+    already shares a (name, ecosystem) — an imported version wins over
+    whatever was there, rather than appearing as a confusing duplicate."""
+    conn = get_connection()
+    try:
+        for dep in deps:
+            conn.execute(
+                "DELETE FROM dependencies WHERE name = :name AND ecosystem = :ecosystem",
+                dep,
+            )
+        conn.executemany(
+            "INSERT INTO dependencies (name, version, ecosystem, source) "
+            "VALUES (:name, :version, :ecosystem, :source)",
+            deps,
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_all_dependencies() -> list[dict]:
     conn = get_connection()
     try:

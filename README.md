@@ -8,7 +8,8 @@ packages and the frontend's npm dependencies — and re-ranks any exposures by r
 exploitation signal instead of raw severity, showing its reasoning at every step instead of
 hiding it behind a single chat completion.
 
-There's no manifest to paste and no CVE to type in. On startup, the backend scans
+By default there's no manifest to paste and no CVE to type in (you can also bring your own, see
+below). On startup, the backend scans
 `backend/requirements.txt` (resolved against the actually-installed package versions) and
 `frontend/package.json` (resolved against `package-lock.json` for exact versions) into a SQLite
 database. Clicking **Prioritize Exposures** analyzes whatever is currently in that database — this
@@ -108,6 +109,13 @@ outdated packages (Pillow, PyYAML, requests, lodash — all with genuine public 
 real scan. They're tagged `source: "demo"` end to end and rendered in a clearly-labeled, separately
 styled panel in the UI — never mixed into or presented as this project's real dependencies.
 
+**Want to check a different project?** Click **Import Dependencies** to upload a
+`requirements.txt` or `package.json` of your own: add it to what's already loaded, or replace the
+inventory with it entirely. Only lines or entries with an explicit version are usable, since
+there's no installed environment here to resolve a bare package name against. Imports are tagged
+`source: "imported"`, shown in their own labeled panel, and don't survive a rescan or restart —
+those always rebuild from this project's real manifests.
+
 ## Deployment
 
 Both sides run on ordinary shared hosting with no root access — no systemd, no direct control
@@ -133,17 +141,13 @@ gitignored, never committed).
 
 - OSV lookups are sequential per package rather than batched — fine for a project's own
   dependency count, not for auditing someone else's 500-dependency lockfile
-- The inventory only covers this repo's own two package manifests (pip + npm) — no support yet
-  for scanning an arbitrary uploaded manifest or a different ecosystem (Maven, Cargo, etc.)
+- Only two ecosystems, pip and npm — no support yet for Maven, Cargo, or others
 - No historical tracking — each run is a fresh snapshot; a real tool would track how EPSS scores
   shift day to day for the same dependency set
 - No test suite yet
 
 ### Planned for v1.1
 
-- **Editable inventory** — add individual packages to the current dependency inventory directly,
-  or replace it wholesale by importing a new `package.json`/`requirements.txt` via an "Import
-  Dependencies" button, instead of only ever scanning this repo's own two manifests
 - **Ticket comments** — after clicking "Create trouble ticket," add additional comments to that
   ticket instead of it being a one-shot, fire-and-forget action
 - **Persistent chat history** — saved chat conversations currently live only in React state, gone

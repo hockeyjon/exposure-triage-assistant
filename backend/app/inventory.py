@@ -93,6 +93,52 @@ def scan_frontend_packages() -> list[dict]:
     return packages
 
 
+_REQ_LINE_RE = re.compile(r"^([A-Za-z0-9_.\-]+)\s*(?:==|>=|<=|~=)\s*([A-Za-z0-9_.\-]+)")
+
+
+def parse_requirements_text(text: str) -> list[dict]:
+    """Parses an uploaded requirements.txt-style file — not this project's
+    own, and not checked against any installed environment, so only lines
+    with an explicit version are usable at all: OSV needs a version to look
+    up, and there's no venv here to resolve a bare package name against."""
+    packages = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        base = line.split("[")[0]  # strip extras, e.g. uvicorn[standard]
+        match = _REQ_LINE_RE.match(base)
+        if not match:
+            continue
+        name, version = match.groups()
+        packages.append({"name": name, "version": version, "ecosystem": "PyPI", "source": "imported"})
+    return packages
+
+
+def parse_package_json_text(text: str) -> list[dict]:
+    """Parses an uploaded package.json's dependencies/devDependencies. No
+    lockfile comes with a single pasted-in file, so this uses the declared
+    range's lower bound as-is (^/~ stripped) rather than a resolved exact
+    version."""
+    data = json.loads(text)
+    declared = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+    packages = []
+    for name, declared_version in declared.items():
+        version = declared_version.lstrip("^~=")
+        if not version or not version[0].isdigit():
+            continue  # skip non-version specifiers: "workspace:*", "latest", git/file URLs
+        packages.append({"name": name, "version": version, "ecosystem": "npm", "source": "imported"})
+    return packages
+
+
+def parse_manifest_text(filename: str, text: str) -> list[dict]:
+    """Detects requirements.txt vs. package.json from content, not just the
+    filename — an uploaded file may be renamed or have no extension."""
+    if filename.lower().endswith(".json") or text.strip().startswith("{"):
+        return parse_package_json_text(text)
+    return parse_requirements_text(text)
+
+
 def seed_inventory() -> list[dict]:
     db.init_db()
     deps = scan_backend_packages() + scan_frontend_packages()

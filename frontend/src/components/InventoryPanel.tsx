@@ -28,6 +28,7 @@ export default function InventoryPanel({ dependencies, loading, error, hidden }:
   const backend = dependencies.filter((d) => d.source === "backend");
   const frontend = dependencies.filter((d) => d.source === "frontend");
   const demo = dependencies.filter((d) => d.source === "demo");
+  const imported = dependencies.filter((d) => d.source === "imported");
 
   const columns = [
     { label: "Backend (Python)", items: backend },
@@ -64,6 +65,25 @@ export default function InventoryPanel({ dependencies, loading, error, hidden }:
           </p>
           <ul className="space-y-0.5 font-mono text-xs text-black/80">
             {demo.map((d) => (
+              <li key={`${d.source}-${d.name}`} className="truncate">
+                {d.name}
+                <span className="text-black/50">@{d.version}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {imported.length > 0 && (
+        <div className="rounded border border-line bg-[var(--brand-light)] p-3">
+          <p className="mb-1 font-mono text-xs uppercase tracking-wide text-black">
+            Imported · {imported.length}{" "}
+            <span className="normal-case tracking-normal text-black/70">
+              — from an uploaded manifest, not this project&rsquo;s own scan
+            </span>
+          </p>
+          <ul className="space-y-0.5 font-mono text-xs text-black/80">
+            {imported.map((d) => (
               <li key={`${d.source}-${d.name}`} className="truncate">
                 {d.name}
                 <span className="text-black/50">@{d.version}</span>
