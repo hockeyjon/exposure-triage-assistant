@@ -146,6 +146,9 @@ gitignored, never committed).
   Dependencies" button, instead of only ever scanning this repo's own two manifests
 - **Ticket comments** — after clicking "Create trouble ticket," add additional comments to that
   ticket instead of it being a one-shot, fire-and-forget action
+- **Persistent chat history** — saved chat conversations currently live only in React state, gone
+  on refresh or when the tab closes. Persist them (e.g. `localStorage`, or a backend table keyed
+  to the browser) so they're still there the next time the app opens.
 
 ### Planned for v2.0
 

@@ -12,7 +12,14 @@ export default function Header() {
           with either. Falls back to a flat 1.5rem on narrow viewports. */}
       <div className="relative flex items-center justify-between px-[max(1.5rem,calc((100%_-_64rem)/4))] py-4">
         <a href="https://www.gunbarrelstudio.com" className="flex items-center gap-2.5">
-          <Image src="/logo/gbs-mark.png" alt="Gunbarrel Studio" width={28} height={17} className="logo-mark" priority />
+          <Image
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo/gbs-mark.png`}
+            alt="Gunbarrel Studio"
+            width={28}
+            height={17}
+            className="logo-mark"
+            priority
+          />
           <span className="text-lg font-bold tracking-tight text-ink">GBS</span>
         </a>
 

@@ -13,7 +13,7 @@ from pathlib import Path
 from . import config, db
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_DIR = BACKEND_DIR.parent / "frontend"
+FRONTEND_DIR = (BACKEND_DIR / config.FRONTEND_DIR) if config.FRONTEND_DIR else BACKEND_DIR.parent / "frontend"
 
 # Real packages, real (patched-since) CVEs, intentionally outdated pins —
 # not this project's actual dependencies. Tagged source="demo" so the UI

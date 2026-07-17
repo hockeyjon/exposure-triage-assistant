@@ -16,6 +16,19 @@ source "${ENV_FILE}"
 
 ARCHIVE="vulnerabilityscanner-backend.tar.gz"
 
+# In production the backend is deployed to its own directory, unrelated to
+# wherever the frontend lands — unlike local dev, where inventory.py finds
+# the frontend's package.json via the sibling ../frontend directory. And
+# the frontend's own deploy artifact is just its static build output;
+# package.json/package-lock.json never ship there by design. So bundle a
+# copy into the backend's own archive instead, cleaned up whether this
+# script succeeds or fails so it never lingers in the local checkout.
+FRONTEND_ROOT="$(cd "${BACKEND_ROOT}/../frontend" && pwd)"
+MANIFEST_DIR="${BACKEND_ROOT}/frontend-manifest"
+mkdir -p "${MANIFEST_DIR}"
+cp "${FRONTEND_ROOT}/package.json" "${FRONTEND_ROOT}/package-lock.json" "${MANIFEST_DIR}/"
+trap 'rm -rf "${MANIFEST_DIR}"' EXIT
+
 # Bundle the app, excluding anything that's regeneratable on the server
 # (.venv, __pycache__, data/ — the SQLite inventory is rebuilt fresh at
 # startup from requirements.txt/package.json), unique to this machine's
@@ -52,6 +65,7 @@ echo "  mkdir -p ${REMOTE_PATH} && cd ${REMOTE_PATH} && tar xzf ${ARCHIVE}"
 echo "  python3 -m venv --copies .venv # first deploy only — plain 'venv' fails under CageFS (common on shared hosting)"
 echo "  # if that then fails on ensurepip, see gbs-fastapi's README Deployment section for the --without-pip + get-pip.py fallback"
 echo "  .venv/bin/pip install -r requirements.txt   # includes supervisor"
-echo "  cp .env.example .env           # first deploy only — then fill in real values"
+echo "  cp .env.example .env           # first deploy only — then fill in real values,"
+echo "                                  # including FRONTEND_DIR=./frontend-manifest"
 echo "  mkdir -p logs                  # first deploy only"
 echo "  .venv/bin/supervisorctl -c supervisord.conf restart vulnerabilityscanner-backend   # or supervisord -c supervisord.conf if not already running"

@@ -1,6 +1,12 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
+// Deploys into a subdirectory, not the domain root — see
+// frontend/scripts/deploy.env.example. Applied only for `next build`
+// (NODE_ENV=production), so `next dev` still serves at plain
+// http://localhost:3000/ instead of 404ing there.
+const basePath = process.env.NODE_ENV === "production" ? "/vulnerabilityscanner" : "";
+
 const nextConfig: NextConfig = {
   output: "export",
   // Pins the workspace root to this frontend/ directory. Without this,
@@ -10,11 +16,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
-  // Deploys into a subdirectory, not the domain root — see
-  // frontend/scripts/deploy.env.example. Applied only for `next build`
-  // (NODE_ENV=production), so `next dev` still serves at plain
-  // http://localhost:3000/ instead of 404ing there.
-  basePath: process.env.NODE_ENV === "production" ? "/vulnerabilityscanner" : "",
+  basePath,
+  // next/image doesn't re-apply basePath to the raw <img src> when
+  // unoptimized (only to _next/* assets), so components that reference a
+  // public/ image directly need it themselves — see Header.tsx.
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   trailingSlash: true,
   // next/image's optimizer needs a running Node server; static export has
   // none, so ship images as-is.

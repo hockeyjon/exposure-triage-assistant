@@ -22,6 +22,7 @@ frontend/next-env.d.ts
 logs/
 deploy.env
 *.tar.gz
+backend/frontend-manifest/
 
 # Editor / OS
 .DS_Store
