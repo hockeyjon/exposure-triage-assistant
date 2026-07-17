@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Palette pulled from mallory.ai's dark/light themes (colors/type only, not
+   their layout or copy) — blue-tinted near-black or near-white surface,
+   cool grey-blue muted text, single blue accent, Geist throughout. Dark is
+   the default; ThemeToggle flips :root[data-theme="light"]. */
+:root {
+  --surface: #02060d;
+  --panel: #070e16;
+  --line: #1d2a37;
+  --ink: #eceff2;
+  --ink-muted: #86909b;
+  --brand: #0082e6;
+  --brand-hover: #2b9bf0;
+}
+
+:root[data-theme="light"] {
+  --surface: #fbfcfd;
+  --panel: #f3f5f7;
+  --line: #d9dfe5;
+  --ink: #050c13;
+  --ink-muted: #4d5660;
+  --brand: #0071df;
+  --brand-hover: #2f8ce8;
+}
+
+/* Brand blue mixed 50% with white — a literal "50% lighter" derived from
+   whichever --brand the current theme has, not a fixed hex. Kept as a plain
+   runtime custom property (referenced via bg-[var(--brand-light)]) rather
+   than a @theme color token: Tailwind v4 silently fails to generate a
+   utility class for a theme color whose value contains color-mix(). */
+:root {
+  --brand-light: color-mix(in srgb, var(--brand) 50%, white 50%);
+}
+
+@theme inline {
+  --color-background: var(--surface);
+  --color-foreground: var(--ink);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* The GBS mark is black line-art on a transparent background; invert it to
+   white for the dark theme rather than shipping two separate image assets. */
+.logo-mark {
+  filter: invert(1);
+}
+:root[data-theme="light"] .logo-mark {
+  filter: none;
+}
