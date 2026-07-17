@@ -147,6 +147,15 @@ gitignored, never committed).
 - **Ticket comments** — after clicking "Create trouble ticket," add additional comments to that
   ticket instead of it being a one-shot, fire-and-forget action
 
+### Planned for v2.0
+
+- **Pre-disclosure vulnerability watch agent** — continuously scans the internet for emerging
+  vulnerabilities before they're published as a CVE, instead of relying solely on OSV/EPSS/KEV,
+  which only cover already-disclosed CVEs
+- **Event-triggered prioritization agent** — runs the pipeline on its own whenever the
+  pre-disclosure watch agent finds something or the dependency supply chain changes, instead of
+  only ever running on a manual click
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
