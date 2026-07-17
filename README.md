@@ -1,5 +1,7 @@
 # Exposure Triage Assistant
 
+*Current release: **v1.0***
+
 **CVSS tells you how bad a vulnerability *could* be. It says nothing about whether anyone is
 actually exploiting it.** This tool audits its own supply chain — the backend's installed Python
 packages and the frontend's npm dependencies — and re-ranks any exposures by real-world
@@ -108,12 +110,26 @@ styled panel in the UI — never mixed into or presented as this project's real 
 
 ## Deployment
 
-- **Frontend** → Vercel (zero config for a standard Next.js app)
-- **Backend** → Render or Fly.io, not Vercel's Python serverless functions — the pipeline streams
-  Server-Sent Events over several seconds, which doesn't fit a short-lived serverless function
-  well, and it needs a writable disk for the SQLite file
+Both sides run on ordinary shared hosting with no root access — no systemd, no direct control
+over the web server config beyond what Apache's per-directory `.htaccess` allows. That constraint
+shaped the deployment more than the frameworks did.
 
-## Known limitations / next steps
+- **Backend** runs under `uvicorn`, kept alive by `supervisord` — a pure-Python process manager
+  that installs into the project's own virtualenv and needs no root to run, restarted
+  automatically on reboot via a crontab entry. Apache's `mod_proxy`, configured through a plain
+  `.htaccess` rewrite rule, forwards `/api/*` to that local port.
+- **Frontend** ships as a Next.js **static export** (`output: "export"`), not a running Node
+  process — every dynamic part of the UI is a client component calling the FastAPI backend
+  directly, so there's nothing for a Node server to do at runtime. The build output is plain
+  HTML/CSS/JS sitting in a directory Apache already serves.
+
+Each side has its own `scripts/deploy.sh` (builds, tars, and `scp`s the result) and
+`scripts/deploy.env.example` (copy to `deploy.env` and fill in your real host/user/key — it's
+gitignored, never committed).
+
+## Roadmap
+
+### Known limitations (v1.0)
 
 - OSV lookups are sequential per package rather than batched — fine for a project's own
   dependency count, not for auditing someone else's 500-dependency lockfile
@@ -122,6 +138,14 @@ styled panel in the UI — never mixed into or presented as this project's real 
 - No historical tracking — each run is a fresh snapshot; a real tool would track how EPSS scores
   shift day to day for the same dependency set
 - No test suite yet
+
+### Planned for v1.1
+
+- **Editable inventory** — add individual packages to the current dependency inventory directly,
+  or replace it wholesale by importing a new `package.json`/`requirements.txt` via an "Import
+  Dependencies" button, instead of only ever scanning this repo's own two manifests
+- **Ticket comments** — after clicking "Create trouble ticket," add additional comments to that
+  ticket instead of it being a one-shot, fire-and-forget action
 
 ## License
 
