@@ -11,6 +11,7 @@ interface Props {
   findings: Finding[];
   completedNodes: NodeName[];
   summary: string | null;
+  onLimitReached: (message: string) => void;
 }
 
 function DeltaBadge({ delta }: { delta: number | null | undefined }) {
@@ -88,14 +89,14 @@ function RankColumn({
   );
 }
 
-export default function RankingTable({ findings, completedNodes, summary }: Props) {
+export default function RankingTable({ findings, completedNodes, summary, onLimitReached }: Props) {
   if (findings.length === 0) return null;
 
   const critiqueDone = completedNodes.includes("critique");
 
   return (
     <div className="space-y-6">
-      <FindingsChat findings={findings} completedNodes={completedNodes} />
+      <FindingsChat findings={findings} completedNodes={completedNodes} onLimitReached={onLimitReached} />
 
       {critiqueDone && summary && (
         <div className="rounded-lg border border-brand/30 bg-brand/10 p-4 text-sm text-ink">

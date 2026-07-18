@@ -8,16 +8,18 @@ from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel
 
-from . import config, db
+from . import config, db, usage
 from .graph import build_graph
 from .inventory import parse_manifest_text, seed_inventory
 from .llm import get_llm
 from .models import Finding
+from .services.email import EmailNotConfiguredError, UnverifiedRecipientError, send_limit_increase_request
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     seed_inventory()
+    usage.init_usage_db()
     yield
 
 
@@ -137,6 +139,7 @@ def _findings_context(findings: list[Finding]) -> str:
 
 async def _stream_chat(prompt: str, findings: list[Finding]):
     try:
+        usage.check_daily_limit()
         llm = get_llm(temperature=0.2)
         system = (
             "A security analyst is looking at a prioritized list of vulnerability findings and "
@@ -150,6 +153,9 @@ async def _stream_chat(prompt: str, findings: list[Finding]):
         async for chunk in llm.astream(messages):
             if chunk.content:
                 yield str(chunk.content)
+        usage.record_call()
+    except usage.DailyLimitReached as exc:
+        yield f"{usage.LIMIT_REACHED_MARKER}{exc}"
     except Exception as exc:
         yield f"(couldn't answer: {exc})"
 
@@ -192,7 +198,9 @@ def findings_chat_title(req: ChatTitleRequest):
         "topic phrase. Plain text only: no quotes, no trailing punctuation."
     )
     try:
+        usage.check_daily_limit()
         resp = llm.invoke([SystemMessage(content=system), HumanMessage(content=transcript)])
+        usage.record_call()
         title = str(resp.content).strip().strip("\"'")
     except Exception:
         fallback = req.exchanges[0].question if req.exchanges else ""
@@ -200,3 +208,43 @@ def findings_chat_title(req: ChatTitleRequest):
         prefix = f"{match.group(0)}: " if match else ""
         title = f"{prefix}{fallback[:60]}" if fallback else ""
     return {"title": title or "Saved conversation"}
+
+
+_EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+class LimitIncreaseRequest(BaseModel):
+    email: str
+    message: str = ""
+
+
+@app.post("/contact/limit-increase")
+def request_limit_increase(req: LimitIncreaseRequest):
+    """The action offered by the modal that appears once DAILY_LLM_CALL_LIMIT
+    is hit — lets a visitor ask for a higher limit instead of just being
+    turned away. Rate-limited on its own (see usage.check_contact_request_limit),
+    independent of the LLM call limit itself: SES sends have a real, if
+    small, cost too."""
+    if not _EMAIL_PATTERN.match(req.email):
+        raise HTTPException(400, "That doesn't look like a valid email address.")
+
+    try:
+        usage.check_contact_request_limit()
+    except usage.DailyLimitReached as exc:
+        raise HTTPException(429, str(exc))
+
+    try:
+        send_limit_increase_request(req.email, req.message)
+    except UnverifiedRecipientError:
+        raise HTTPException(
+            422,
+            detail={
+                "error": "unverified_email",
+                "message": "We couldn't send anything to that email address. Please double-check it and try again.",
+            },
+        )
+    except EmailNotConfiguredError:
+        raise HTTPException(503, "Email isn't set up for this deployment yet — try again later.")
+
+    usage.record_contact_request()
+    return {"status": "sent"}

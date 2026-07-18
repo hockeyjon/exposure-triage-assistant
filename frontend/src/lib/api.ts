@@ -27,6 +27,25 @@ export async function importInventory(file: File, mode: "add" | "replace"): Prom
   return data.dependencies;
 }
 
+export async function requestLimitIncrease(email: string, message: string): Promise<void> {
+  const resp = await fetch(`${API_URL}/contact/limit-increase`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, message }),
+  });
+  if (!resp.ok) {
+    const detail = await resp.json().catch(() => null);
+    const detailMessage = typeof detail?.detail === "string" ? detail.detail : detail?.detail?.message;
+    const err = new Error(detailMessage || `Request failed: ${resp.status} ${resp.statusText}`);
+    (err as Error & { code?: string }).code = detail?.detail?.error;
+    throw err;
+  }
+}
+
+export function isUnverifiedEmailError(error: unknown): boolean {
+  return error instanceof Error && (error as Error & { code?: string }).code === "unverified_email";
+}
+
 /**
  * Consumes the backend's Server-Sent Events stream from GET /analyze — no
  * request body, since there's no user input. It analyzes whatever is

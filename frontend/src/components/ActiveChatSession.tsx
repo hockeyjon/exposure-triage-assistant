@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
 import type { Exchange, Finding } from "@/lib/types";
 import { stickBottomToViewport } from "@/lib/scroll";
+import { isLimitReachedMessage } from "@/lib/limitReached";
 import AskedQuestion from "./AskedQuestion";
 import Spinner from "./Spinner";
 import PencilIcon from "./PencilIcon";
@@ -25,9 +26,11 @@ async function fetchTitle(exchanges: Exchange[]): Promise<string> {
 export default function ActiveChatSession({
   findings,
   onSave,
+  onLimitReached,
 }: {
   findings: Finding[];
   onSave: (title: string, exchanges: Exchange[]) => void;
+  onLimitReached: (message: string) => void;
 }) {
   const [history, setHistory] = useState<Exchange[]>([]);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
@@ -43,7 +46,14 @@ export default function ActiveChatSession({
       streamProtocol: "text",
       body: { findings },
       onFinish: (prompt, finalCompletion) => {
-        setHistory((prev) => [...prev, { question: prompt, answer: finalCompletion }]);
+        // A limit-reached reply isn't a real answer — drop it instead of
+        // adding a synthetic exchange to history, and hand off to the
+        // "request a limit increase" modal instead.
+        if (isLimitReachedMessage(finalCompletion)) {
+          onLimitReached(finalCompletion);
+        } else {
+          setHistory((prev) => [...prev, { question: prompt, answer: finalCompletion }]);
+        }
         setCompletion("");
         setPendingQuestion(null);
       },

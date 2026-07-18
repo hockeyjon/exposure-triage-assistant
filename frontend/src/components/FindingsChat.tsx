@@ -16,9 +16,11 @@ interface SavedSession {
 export default function FindingsChat({
   findings,
   completedNodes,
+  onLimitReached,
 }: {
   findings: Finding[];
   completedNodes: NodeName[];
+  onLimitReached: (message: string) => void;
 }) {
   const [savedSessions, setSavedSessions] = useState<SavedSession[]>([]);
   const [activeKey, setActiveKey] = useState(0);
@@ -84,7 +86,7 @@ export default function FindingsChat({
           ))}
         </div>
       )}
-      <ActiveChatSession key={activeKey} findings={findings} onSave={handleSave} />
+      <ActiveChatSession key={activeKey} findings={findings} onSave={handleSave} onLimitReached={onLimitReached} />
     </div>
   );
 }

@@ -18,12 +18,34 @@ FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 # cost bounded when a manifest resolves to a large number of CVEs.
 MAX_NARRATED_FINDINGS = int(os.getenv("MAX_NARRATED_FINDINGS", "12"))
 
+# Hard cap on LLM calls per day, combined across draft_rationale, critique,
+# the findings chat, and its auto-titling — a provider-agnostic backstop
+# against a runaway loop or unexpected traffic running up an API bill. Past
+# the cap, those features degrade the same way they already do when no LLM
+# key is configured: a clear inline message instead of a hard failure. Resets
+# at UTC midnight. 0 (or negative) disables the limit entirely.
+DAILY_LLM_CALL_LIMIT = int(os.getenv("DAILY_LLM_CALL_LIMIT", "20"))
+
 # Off by default. When true, a handful of intentionally outdated, real,
 # publicly-known-vulnerable packages are merged into the inventory (tagged
 # source="demo", never mixed silently into the real backend/frontend scan)
 # so the ranking UI has something to show without needing an actual
 # vulnerable dependency in this project. See inventory.py DEMO_PACKAGES.
 INCLUDE_DEMO_PACKAGES = os.getenv("INCLUDE_DEMO_PACKAGES", "false").lower() in ("1", "true", "yes")
+
+# AWS SES — sends the "daily limit increase request" email offered once
+# DAILY_LLM_CALL_LIMIT is hit. SES_SENDER_EMAIL must be a verified sending
+# identity in the SES account the credentials below belong to.
+AWS_REGION = os.getenv("AWS_REGION", "us-east-2")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+SES_SENDER_EMAIL = os.getenv("SES_SENDER_EMAIL", "")
+LIMIT_REQUEST_NOTIFY_EMAIL = os.getenv("LIMIT_REQUEST_NOTIFY_EMAIL", "")
+
+# How many limit-increase-request emails /contact/limit-increase will send
+# per day. Low on purpose — this exists to catch a genuine, occasional
+# request, not to double as a general-purpose contact form.
+LIMIT_INCREASE_REQUEST_DAILY_CAP = int(os.getenv("LIMIT_INCREASE_REQUEST_DAILY_CAP", "5"))
 
 # Optional override for where inventory.py looks for the frontend's
 # package.json/package-lock.json. Unset (the default) resolves to the

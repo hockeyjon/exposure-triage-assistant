@@ -18,7 +18,7 @@ from typing import Optional, TypedDict
 
 from langgraph.graph import END, StateGraph
 
-from . import config, db
+from . import config, db, usage
 from .llm import get_llm
 from .models import CritiqueResult
 from .tools import epss, kev, osv, scoring
@@ -141,6 +141,11 @@ def node_draft_rationale(state: GraphState) -> GraphState:
         return {"summary": "No known vulnerabilities found in this project's dependencies."}
 
     try:
+        usage.check_daily_limit()
+    except usage.DailyLimitReached as exc:
+        return {"error": f"{usage.LIMIT_REACHED_MARKER}{exc} Showing deterministic ranking only."}
+
+    try:
         llm = get_llm(temperature=0).with_structured_output(CritiqueResult)
         payload = _findings_to_llm_payload(top)
         draft: CritiqueResult = llm.invoke(
@@ -149,6 +154,7 @@ def node_draft_rationale(state: GraphState) -> GraphState:
                 {"role": "user", "content": f"Findings (sorted by real risk rank):\n{payload}"},
             ]
         )
+        usage.record_call()
     except Exception as exc:  # missing/invalid API key, provider outage, etc.
         return {"error": f"LLM narration unavailable ({exc}); showing deterministic ranking only."}
 
@@ -166,6 +172,11 @@ def node_critique(state: GraphState) -> GraphState:
         return {}
 
     try:
+        usage.check_daily_limit()
+    except usage.DailyLimitReached as exc:
+        return {"summary": f"{usage.LIMIT_REACHED_MARKER}{exc} Showing deterministic ranking only."}
+
+    try:
         llm = get_llm(temperature=0).with_structured_output(CritiqueResult)
         payload = _findings_to_llm_payload(top)
         reviewed: CritiqueResult = llm.invoke(
@@ -177,6 +188,7 @@ def node_critique(state: GraphState) -> GraphState:
                 },
             ]
         )
+        usage.record_call()
     except Exception as exc:
         return {"summary": f"LLM critique unavailable ({exc}); showing deterministic ranking only."}
 

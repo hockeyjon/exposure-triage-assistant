@@ -63,7 +63,12 @@ backend/   FastAPI + LangGraph + LangChain + SQLite
 
 The backend degrades gracefully if no LLM key is configured: the deterministic ranking still
 runs and streams to the UI, with a clear message explaining why narration is unavailable, instead
-of a hard failure.
+of a hard failure. The same degradation kicks in once `DAILY_LLM_CALL_LIMIT` (default 20, combined
+across narration, critique, chat, and chat titling) is hit for the day — a backstop against a
+runaway loop or unexpected traffic running up an API bill, tracked in SQLite so a watchdog-triggered
+restart doesn't quietly reset the count. When that happens, the frontend offers a modal to email a
+request for a higher limit, sent via AWS SES (`POST /contact/limit-increase`, itself capped at
+`LIMIT_INCREASE_REQUEST_DAILY_CAP` sends/day) — see backend/.env.example for the SES settings.
 
 ## Running it locally
 

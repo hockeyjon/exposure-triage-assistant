@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { fetchInventory, streamAnalysis } from "@/lib/api";
 import { scrollToId } from "@/lib/scroll";
+import { isLimitReachedMessage, stripLimitReachedMarker } from "@/lib/limitReached";
 import AgentTrace from "@/components/AgentTrace";
 import RankingTable from "@/components/RankingTable";
 import InventoryPanel from "@/components/InventoryPanel";
 import ImportDependenciesButton from "@/components/ImportDependenciesButton";
+import LimitIncreaseModal from "@/components/LimitIncreaseModal";
 import Header from "@/components/Header";
 import type { Dependency, GraphPublicState, NodeName } from "@/lib/types";
 
@@ -20,6 +22,13 @@ export default function Home() {
   const [state, setState] = useState<GraphPublicState | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [importVersion, setImportVersion] = useState(0);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitContextMessage, setLimitContextMessage] = useState<string | null>(null);
+
+  function openLimitModal(rawMessage: string) {
+    setLimitContextMessage(stripLimitReachedMarker(rawMessage).trim());
+    setLimitModalOpen(true);
+  }
 
   useEffect(() => {
     fetchInventory()
@@ -66,6 +75,17 @@ export default function Home() {
           setState(evt.payload.state);
         } else if (evt.type === "done") {
           setState(evt.payload.state);
+          // draft_rationale carries a limit-reached failure into
+          // state.error; critique (which still runs even when
+          // draft_rationale already failed) copies that same value into
+          // state.summary, or sets it there directly if critique is the
+          // one that hit the limit. Either is a real trigger — checked
+          // here, once the run has fully settled, rather than in an effect
+          // reacting to state after the fact.
+          const trigger = evt.payload.state.error ?? evt.payload.state.summary ?? null;
+          if (isLimitReachedMessage(trigger)) {
+            openLimitModal(trigger);
+          }
         } else if (evt.type === "error") {
           setConnectionError(evt.payload.message);
         }
@@ -122,7 +142,7 @@ export default function Home() {
             <AgentTrace
               completedNodes={completedNodes}
               running={running}
-              errorMessage={connectionError ?? state?.error ?? null}
+              errorMessage={connectionError ?? (state?.error ? stripLimitReachedMarker(state.error) : null)}
             />
           </div>
         )}
@@ -131,10 +151,17 @@ export default function Home() {
           <RankingTable
             findings={state.findings}
             completedNodes={completedNodes}
-            summary={state.summary ?? null}
+            summary={state.summary ? stripLimitReachedMarker(state.summary) : null}
+            onLimitReached={openLimitModal}
           />
         )}
       </div>
+
+      <LimitIncreaseModal
+        open={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        contextMessage={limitContextMessage}
+      />
     </div>
   );
 }
