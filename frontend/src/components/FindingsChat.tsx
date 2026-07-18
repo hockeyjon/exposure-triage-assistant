@@ -34,6 +34,14 @@ export default function FindingsChat({
     setActiveKey((k) => k + 1);
   }
 
+  function handleRenameSaved(id: number, title: string) {
+    setSavedSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title } : s)));
+  }
+
+  function handleDeleteSaved(id: number) {
+    setSavedSessions((prev) => prev.filter((s) => s.id !== id));
+  }
+
   if (!critiqueDone) {
     return (
       <div className="mb-6 rounded-lg border border-line bg-panel p-4" id="chat-panel">
@@ -51,7 +59,14 @@ export default function FindingsChat({
   return (
     <div className="mb-6 space-y-4">
       {savedSessions.map((s) => (
-        <SavedChatSession key={s.id} id={`chat-panel-saved-${s.id}`} title={s.title} exchanges={s.exchanges} />
+        <SavedChatSession
+          key={s.id}
+          id={`chat-panel-saved-${s.id}`}
+          title={s.title}
+          exchanges={s.exchanges}
+          onRename={(title) => handleRenameSaved(s.id, title)}
+          onDelete={() => handleDeleteSaved(s.id)}
+        />
       ))}
       <ActiveChatSession key={activeKey} findings={findings} onSave={handleSave} />
     </div>

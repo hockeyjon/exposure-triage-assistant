@@ -5,6 +5,8 @@ import { useCompletion } from "@ai-sdk/react";
 import type { Exchange, Finding } from "@/lib/types";
 import AskedQuestion from "./AskedQuestion";
 import Spinner from "./Spinner";
+import PencilIcon from "./PencilIcon";
+import TrashIcon from "./TrashIcon";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -31,6 +33,8 @@ export default function ActiveChatSession({
   const [saving, setSaving] = useState(false);
   const [derivedTitle, setDerivedTitle] = useState<string | null>(null);
   const [titleLoading, setTitleLoading] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
 
   const { completion, input, handleInputChange, handleSubmit, setInput, setCompletion, isLoading, error } =
     useCompletion({
@@ -69,6 +73,18 @@ export default function ActiveChatSession({
     setInput("");
     setDerivedTitle(null);
     setTitleLoading(false);
+    setEditingTitle(false);
+  }
+
+  function startEditTitle() {
+    setTitleDraft(derivedTitle ?? "");
+    setEditingTitle(true);
+  }
+
+  function commitTitleEdit() {
+    const trimmed = titleDraft.trim();
+    if (trimmed) setDerivedTitle(trimmed);
+    setEditingTitle(false);
   }
 
   async function onSaveClick() {
@@ -100,10 +116,40 @@ export default function ActiveChatSession({
             reason it through before deciding what to act on.
           </p>
         </>
+      ) : editingTitle ? (
+        <input
+          autoFocus
+          value={titleDraft}
+          onChange={(e) => setTitleDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitTitleEdit();
+            if (e.key === "Escape") setEditingTitle(false);
+          }}
+          onBlur={commitTitleEdit}
+          className="mb-3 w-full rounded border border-brand/50 bg-surface px-2 py-1 text-sm font-semibold text-ink focus:outline-none"
+        />
       ) : (
-        <h2 className="mb-3 text-sm font-semibold text-ink" id="chat-title">
-          {derivedTitle ?? (titleLoading ? "Naming this conversation…" : "Conversation")}
-        </h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink" id="chat-title">
+            {derivedTitle ?? (titleLoading ? "Naming this conversation…" : "Conversation")}
+          </h2>
+          {derivedTitle && (
+            <button
+              onClick={startEditTitle}
+              aria-label="Rename conversation"
+              className="shrink-0 text-ink-muted transition-colors hover:text-ink"
+            >
+              <PencilIcon />
+            </button>
+          )}
+          <button
+            onClick={onClear}
+            aria-label="Delete conversation"
+            className="shrink-0 text-ink-muted transition-colors hover:text-ink"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       )}
 
       {history.map((exchange, i) => (

@@ -108,7 +108,7 @@ export default function RankingTable({ findings, completedNodes, summary }: Prop
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h3 className="text-sm font-semibold text-ink">Findings Rationale</h3>
             <button
-              onClick={() => scrollToId(RISK_TABLES_ID)}
+              onClick={() => scrollToId("finding-rationale-panel", "bottom")}
               className="rounded bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
             >
               View Raw Risk Tables ↓
@@ -154,22 +154,22 @@ export default function RankingTable({ findings, completedNodes, summary }: Prop
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 rounded-lg border border-line bg-panel px-4 py-3">
-          {critiqueDone && (
+        {critiqueDone && (
+          <div className="flex items-center justify-end gap-3">
             <button
               onClick={() => scrollToId("agent-trace-panel", "bottom")}
               className="rounded bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
             >
               View Findings Rationale ↑
             </button>
-          )}
-          <button
-            onClick={() => scrollToId(RISK_TABLES_ID)}
-            className="rounded bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
-          >
-            View Raw Risk Tables ↑
-          </button>
-        </div>
+            <button
+              onClick={() => scrollToId("finding-rationale-panel", "bottom")}
+              className="rounded bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
+            >
+              View Raw Risk Tables ↑
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

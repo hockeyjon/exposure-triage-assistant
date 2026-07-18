@@ -15,12 +15,19 @@ export default function Header() {
           <Image
             src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo/gbs-mark.png`}
             alt="Gunbarrel Studio"
-            width={28}
-            height={17}
+            width={55}
+            height={33}
             className="logo-mark"
             priority
           />
-          <span className="text-lg font-bold tracking-tight text-ink">GBS</span>
+          <Image
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo/gbs-logo-text-white.png`}
+            alt="Gunbarrel Studio"
+            width={153}
+            height={18}
+            className="logo-mark"
+            priority
+          />
         </a>
 
         <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-6">
