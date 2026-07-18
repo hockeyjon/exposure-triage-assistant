@@ -19,6 +19,7 @@ export default function Home() {
   const [completedNodes, setCompletedNodes] = useState<NodeName[]>([]);
   const [state, setState] = useState<GraphPublicState | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [importVersion, setImportVersion] = useState(0);
 
   useEffect(() => {
     fetchInventory()
@@ -34,6 +35,22 @@ export default function Home() {
       scrollToId("dependency-inventory-panel", "bottom");
     }
   }, [completedNodes]);
+
+  // A freshly imported list can push the Prioritize Exposures button off
+  // screen. If that happened, ease down to it instead of leaving the user
+  // to scroll and find it themselves.
+  useEffect(() => {
+    if (importVersion === 0) return;
+    const panel = document.getElementById("dependency-inventory-panel");
+    if (panel && panel.getBoundingClientRect().bottom > window.innerHeight) {
+      scrollToId("dependency-inventory-panel", "bottom", "smooth");
+    }
+  }, [importVersion]);
+
+  function handleImported(deps: Dependency[]) {
+    setDependencies(deps);
+    setImportVersion((v) => v + 1);
+  }
 
   async function runAnalysis() {
     if (running) return;
@@ -94,7 +111,7 @@ export default function Home() {
               {running ? "Analyzing…" : "Prioritize Exposures"}
             </button>
             {!(running || completedNodes.length > 0) && (
-              <ImportDependenciesButton onImported={setDependencies} />
+              <ImportDependenciesButton onImported={handleImported} />
             )}
           </div>
         </div>

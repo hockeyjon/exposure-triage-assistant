@@ -5,7 +5,7 @@ import AboutDropdown from "./AboutDropdown";
 
 export default function Header() {
   return (
-    <header className="border-b border-line">
+    <header id="site-header" className="sticky top-0 z-40 border-b border-line bg-surface">
       {/* Padding is half the gutter a max-w-5xl centered container would
           leave on each side — i.e. the logo/toggle sit halfway between the
           body content's edge and the actual edge of the page, not flush

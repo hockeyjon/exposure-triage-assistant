@@ -33,27 +33,29 @@ export default function InventoryPanel({ dependencies, loading, error, hidden }:
   const columns = [
     { label: "Backend (Python)", items: backend },
     { label: "Frontend (npm)", items: frontend },
-  ];
+  ].filter(({ items }) => items.length > 0);
 
   return (
     <div className="space-y-4" id="inventory-panel">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {columns.map(({ label, items }) => (
-          <div key={label}>
-            <p className="mb-1 font-mono text-xs uppercase tracking-wide text-ink-muted">
-              {label} · {items.length}
-            </p>
-            <ul className="space-y-0.5 font-mono text-xs text-ink-muted">
-              {items.map((d) => (
-                <li key={`${d.source}-${d.name}`} className="truncate">
-                  {d.name}
-                  <span className="text-ink-muted/60">@{d.version}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+      {columns.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {columns.map(({ label, items }) => (
+            <div key={label}>
+              <p className="mb-1 font-mono text-xs uppercase tracking-wide text-ink-muted">
+                {label} · {items.length}
+              </p>
+              <ul className="space-y-0.5 font-mono text-xs text-ink-muted">
+                {items.map((d) => (
+                  <li key={`${d.source}-${d.name}`} className="truncate">
+                    {d.name}
+                    <span className="text-ink-muted/60">@{d.version}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
 
       {demo.length > 0 && (
         <div className="rounded border border-amber-300 bg-amber-100 p-3">

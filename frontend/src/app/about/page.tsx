@@ -39,6 +39,17 @@ export default function AboutPage() {
             trouble-ticket workflow are all client-side state built on top of that stream.
           </p>
           <p>
+            The inventory isn&rsquo;t locked to this project&rsquo;s own manifests.{" "}
+            <strong>Import Dependencies</strong> uploads a <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">requirements.txt</code> or{" "}
+            <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">package.json</code> against{" "}
+            <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">POST /inventory/import</code>, either merged into what&rsquo;s
+            already loaded or replacing it outright. Only entries with an explicit pinned version are
+            usable, since there&rsquo;s no installed environment here to resolve a bare package name
+            against. Imported rows are tagged <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">source: &quot;imported&quot;</code>,
+            shown in their own labeled panel, and gone on the next rescan or restart: those always
+            rebuild from this project&rsquo;s real manifests, never from something a visitor uploaded.
+          </p>
+          <p>
             The <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">/analyze</code>{" "}
             agent-trace stream is consumed with a hand-rolled{" "}
             <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">fetch</code> +{" "}
@@ -60,6 +71,13 @@ export default function AboutPage() {
             one. It&rsquo;s grounded in every finding currently on screen, not just one, so an
             analyst can ask something like &ldquo;which of these are actually exploitable without
             authentication?&rdquo; before deciding what to open a ticket for.
+          </p>
+          <p>
+            A conversation gets an auto-generated title the moment the first answer lands, from a
+            lightweight LLM call against <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">POST /findings/chat/title</code>{" "}
+            that summarizes the exchange so far. Both the active conversation and anything saved
+            afterward can be renamed or deleted from there, so a conversation doesn&rsquo;t have to
+            be finished before it has a name worth keeping.
           </p>
         </Section>
 
@@ -118,6 +136,15 @@ export default function AboutPage() {
             configured through a plain <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">.htaccess</code>{" "}
             rewrite rule, forwards <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">/api/*</code> to
             that local port. One process, one port, one proxy rule: a small, well-understood surface.
+          </p>
+          <p>
+            Restart-on-reboot doesn&rsquo;t cover every failure mode: a shared-host resource-limit
+            enforcement action (CPU, memory, or I/O quota) can kill the process outright without the
+            box itself ever rebooting, so a reboot-only crontab entry never fires. A separate cron&rsquo;d{" "}
+            <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">scripts/watchdog.sh</code>{" "}
+            checks every few minutes and restarts the backend only if it&rsquo;s actually down. It
+            was added after exactly that kind of kill took the backend out during a heavy deploy day,
+            and nothing brought it back until someone noticed.
           </p>
           <p>
             The frontend ships as a <strong>static export</strong>, not a running Node process.
