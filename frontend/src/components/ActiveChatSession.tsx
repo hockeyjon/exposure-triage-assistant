@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
 import type { Exchange, Finding } from "@/lib/types";
+import { stickBottomToViewport } from "@/lib/scroll";
 import AskedQuestion from "./AskedQuestion";
 import Spinner from "./Spinner";
 import PencilIcon from "./PencilIcon";
@@ -60,6 +61,26 @@ export default function ActiveChatSession({
       .finally(() => setTitleLoading(false));
   }, [history, derivedTitle]);
 
+  // As the reply streams in, the panel can grow past the bottom of the
+  // viewport. Reacting to `completion` changing isn't enough to track that
+  // live: the SDK throttles how often it updates that string, so by the
+  // time an update lands, more text has often already arrived without a
+  // follow-up check. Poll the panel's actual layout instead, for as long
+  // as a reply is in flight, so the check runs on a fixed cadence rather
+  // than however often the SDK happens to re-render.
+  useEffect(() => {
+    function keepBottomInView() {
+      const panel = document.getElementById("chat-panel");
+      if (panel) stickBottomToViewport(panel, 10);
+    }
+    if (!isLoading) {
+      keepBottomInView(); // one last check once the reply (and any layout it settles into) is done
+      return;
+    }
+    const interval = setInterval(keepBottomInView, 150);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
   function onSubmit(e: React.FormEvent) {
     setPendingQuestion(input);
     handleSubmit(e);
@@ -105,7 +126,7 @@ export default function ActiveChatSession({
   const busy = isLoading || saving;
 
   return (
-    <div className="rounded-lg border border-line bg-panel p-4" id="chat-panel">
+    <div className="rounded-lg border border-line bg-panel p-4 [overflow-anchor:none]" id="chat-panel">
       {history.length === 0 ? (
         <>
           <h2 className="mb-1 text-sm font-semibold text-ink" id="chat-title">
