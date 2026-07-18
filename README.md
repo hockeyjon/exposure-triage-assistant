@@ -125,15 +125,20 @@ shaped the deployment more than the frameworks did.
 - **Backend** runs under `uvicorn`, kept alive by `supervisord` — a pure-Python process manager
   that installs into the project's own virtualenv and needs no root to run, restarted
   automatically on reboot via a crontab entry. Apache's `mod_proxy`, configured through a plain
-  `.htaccess` rewrite rule, forwards `/api/*` to that local port.
+  `.htaccess` rewrite rule, forwards `/api/*` to that local port. A separate cron'd
+  `scripts/watchdog.sh` restarts it if a shared-host resource-limit enforcement action (CPU,
+  memory, or I/O quota) kills the process outright — a reboot-only crontab entry doesn't catch
+  that, since the box itself never restarts.
 - **Frontend** ships as a Next.js **static export** (`output: "export"`), not a running Node
   process — every dynamic part of the UI is a client component calling the FastAPI backend
   directly, so there's nothing for a Node server to do at runtime. The build output is plain
   HTML/CSS/JS sitting in a directory Apache already serves.
 
-Each side has its own `scripts/deploy.sh` (builds, tars, and `scp`s the result) and
-`scripts/deploy.env.example` (copy to `deploy.env` and fill in your real host/user/key — it's
-gitignored, never committed).
+Each side has its own deploy script (`backend/deploy.sh`, `frontend/scripts/deploy.sh`) that
+builds, tars, and `scp`s the result, plus a `scripts/deploy.env.example` (copy to `deploy.env` and
+fill in your real host/user/key — it's gitignored, never committed). The backend's archive also
+carries `scripts/watchdog.sh` along for the ride, so it lands on the server automatically instead
+of needing a separate manual copy.
 
 ## Roadmap
 

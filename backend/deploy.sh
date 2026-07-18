@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-ENV_FILE="${SCRIPT_DIR}/deploy.env"
+BACKEND_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${BACKEND_ROOT}/scripts/deploy.env"
 
 if [ ! -f "${ENV_FILE}" ]; then
   echo "Missing ${ENV_FILE}."
@@ -32,10 +31,11 @@ trap 'rm -rf "${MANIFEST_DIR}"' EXIT
 # Bundle the app, excluding anything that's regeneratable on the server
 # (.venv, __pycache__, data/ — the SQLite inventory is rebuilt fresh at
 # startup from requirements.txt/package.json), unique to this machine's
-# local setup (.env, logs/, supervisor's runtime files), deploy-only
-# tooling the server has no use for (scripts/), or just not needed to run
-# the app. Never ship .env — that would overwrite the server's real
-# production secrets with local ones.
+# local setup (.env, logs/, supervisor's runtime files), or local-only
+# deploy tooling the server has no use for (this script, deploy.env and
+# its example). scripts/watchdog.sh is deliberately NOT excluded — it has
+# to actually be on the server to be cron'd there. Never ship .env — that
+# would overwrite the server's real production secrets with local ones.
 echo "Creating archive..."
 # Suppress macOS's AppleDouble ._* sidecar files in the archive.
 export COPYFILE_DISABLE=1
@@ -50,7 +50,9 @@ tar -czf "${BACKEND_ROOT}/${ARCHIVE}" \
   --exclude='supervisord.pid' \
   --exclude='supervisor.sock' \
   --exclude='tests' \
-  --exclude='scripts' \
+  --exclude='deploy.sh' \
+  --exclude='deploy.env' \
+  --exclude='deploy.env.example' \
   --exclude='*.tar' \
   --exclude='*.tar.gz' \
   -C "${BACKEND_ROOT}" .
@@ -69,3 +71,11 @@ echo "  cp .env.example .env           # first deploy only — then fill in real
 echo "                                  # including FRONTEND_DIR=./frontend-manifest"
 echo "  mkdir -p logs                  # first deploy only"
 echo "  .venv/bin/supervisorctl -c supervisord.conf restart vulnerabilityscanner-backend   # or supervisord -c supervisord.conf if not already running"
+echo
+echo "First deploy only — the watchdog now ships in this same archive (scripts/watchdog.sh)."
+echo "It restarts the backend if a shared-host resource-limit kill takes it down, which a"
+echo "reboot-only crontab entry doesn't cover. On the server:"
+echo "  chmod +x scripts/watchdog.sh"
+echo "  crontab -e   # add this line as-is, with no leading # — that's a comment in crontab"
+echo "  #   and would silently disable the job:"
+echo "  */5 * * * * ${REMOTE_PATH}/scripts/watchdog.sh >> ${REMOTE_PATH}/logs/watchdog.log 2>&1"
