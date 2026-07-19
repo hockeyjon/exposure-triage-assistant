@@ -108,11 +108,13 @@ Exposures** to analyze it.
 If you add or upgrade a dependency and want to see it reflected without restarting the backend,
 call `POST /inventory/rescan`.
 
-**Want to see it rank something?** This project's own dependencies may well be clean. Set
-`INCLUDE_DEMO_PACKAGES=true` in `backend/.env` to merge in a handful of real, intentionally
-outdated packages (Pillow, PyYAML, requests, lodash — all with genuine public CVEs) alongside the
-real scan. They're tagged `source: "demo"` end to end and rendered in a clearly-labeled, separately
-styled panel in the UI — never mixed into or presented as this project's real dependencies.
+**Why the ranking shows more than this project's own dependencies:** this project's own
+dependencies may well be clean, so by default (`INCLUDE_DEMO_PACKAGES=true` in `backend/.env`) a
+handful of real, intentionally outdated packages (Pillow, PyYAML, requests, lodash — all with
+genuine public CVEs) are merged in alongside the real scan, so there's always something to rank.
+They're tagged `source: "demo"` end to end and rendered in a clearly-labeled, separately styled
+panel in the UI — never mixed into or presented as this project's real dependencies. Set
+`INCLUDE_DEMO_PACKAGES=false` to see only this project's actual dependency scan.
 
 **Want to check a different project?** Click **Import Dependencies** to upload a
 `requirements.txt` or `package.json` of your own: add it to what's already loaded, or replace the

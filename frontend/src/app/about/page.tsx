@@ -50,6 +50,14 @@ export default function AboutPage() {
             rebuild from this project&rsquo;s real manifests, never from something a visitor uploaded.
           </p>
           <p>
+            This project&rsquo;s own dependencies may well be clean, so by default a handful of
+            real, intentionally outdated packages with genuine public CVEs (Pillow, PyYAML,
+            requests, lodash) are merged into the inventory too, so there&rsquo;s always something
+            to rank. They&rsquo;re tagged <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">source: &quot;demo&quot;</code>,
+            rendered in their own labeled panel, and never mixed into or presented as this
+            project&rsquo;s real dependencies.
+          </p>
+          <p>
             The <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">/analyze</code>{" "}
             agent-trace stream is consumed with a hand-rolled{" "}
             <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">fetch</code> +{" "}

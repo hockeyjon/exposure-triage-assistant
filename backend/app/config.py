@@ -26,12 +26,13 @@ MAX_NARRATED_FINDINGS = int(os.getenv("MAX_NARRATED_FINDINGS", "12"))
 # at UTC midnight. 0 (or negative) disables the limit entirely.
 DAILY_LLM_CALL_LIMIT = int(os.getenv("DAILY_LLM_CALL_LIMIT", "20"))
 
-# Off by default. When true, a handful of intentionally outdated, real,
+# On by default: a handful of intentionally outdated, real,
 # publicly-known-vulnerable packages are merged into the inventory (tagged
 # source="demo", never mixed silently into the real backend/frontend scan)
-# so the ranking UI has something to show without needing an actual
-# vulnerable dependency in this project. See inventory.py DEMO_PACKAGES.
-INCLUDE_DEMO_PACKAGES = os.getenv("INCLUDE_DEMO_PACKAGES", "false").lower() in ("1", "true", "yes")
+# so a visitor sees actual exposures ranked without needing this project to
+# have a real vulnerable dependency, or knowing to flip this var themselves.
+# See inventory.py DEMO_PACKAGES.
+INCLUDE_DEMO_PACKAGES = os.getenv("INCLUDE_DEMO_PACKAGES", "true").lower() in ("1", "true", "yes")
 
 # AWS SES — sends the "daily limit increase request" email offered once
 # DAILY_LLM_CALL_LIMIT is hit. SES_SENDER_EMAIL must be a verified sending
