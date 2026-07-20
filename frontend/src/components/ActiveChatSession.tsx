@@ -52,24 +52,25 @@ export default function ActiveChatSession({
         if (isLimitReachedMessage(finalCompletion)) {
           onLimitReached(finalCompletion);
         } else {
-          setHistory((prev) => [...prev, { question: prompt, answer: finalCompletion }]);
+          const newExchange = { question: prompt, answer: finalCompletion };
+          setHistory((prev) => [...prev, newExchange]);
+          // Names the session as soon as the first reply lands, not just when
+          // "Save Conversation" is clicked — so the title is already sitting
+          // there by the time anyone decides whether to save. Triggered here,
+          // where history actually grows to its first entry, rather than from
+          // an effect reacting to that change after the fact.
+          if (history.length === 0 && !derivedTitle) {
+            setTitleLoading(true);
+            fetchTitle([newExchange])
+              .then(setDerivedTitle)
+              .catch(() => setDerivedTitle(newExchange.question.slice(0, 60) || "Saved conversation"))
+              .finally(() => setTitleLoading(false));
+          }
         }
         setCompletion("");
         setPendingQuestion(null);
       },
     });
-
-  // Names the session as soon as the first reply lands, not just when
-  // "Save Conversation" is clicked — so the title is already sitting there
-  // by the time anyone decides whether to save.
-  useEffect(() => {
-    if (history.length !== 1 || derivedTitle) return;
-    setTitleLoading(true);
-    fetchTitle(history)
-      .then(setDerivedTitle)
-      .catch(() => setDerivedTitle(history[0].question.slice(0, 60) || "Saved conversation"))
-      .finally(() => setTitleLoading(false));
-  }, [history, derivedTitle]);
 
   // As the reply streams in, the panel can grow past the bottom of the
   // viewport. Reacting to `completion` changing isn't enough to track that
